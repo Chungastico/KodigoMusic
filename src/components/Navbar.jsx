@@ -1,7 +1,25 @@
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Bars3Icon, HomeIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
-import { Link } from "react-router-dom";
+import { auth } from "../firebase/firebase";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 
 export default function Navbar({ openSidebar }) {
+    const [user, setUser] = useState(null);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            setUser(currentUser);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const handleLogout = async () => {
+        await signOut(auth);
+        navigate("/login");
+    };
+
     return (
         <nav className="w-full flex items-center justify-between px-6 py-4 bg-gray-900 text-white">
             <div className="flex items-center space-x-6">
@@ -37,15 +55,29 @@ export default function Navbar({ openSidebar }) {
             </div>
 
             <div className="flex items-center space-x-4">
-                <Link to="/register" className="text-sm hover:text-purple-500 transition-colors">
-                    Regístrate
-                </Link>
-                <Link
-                    to="/login"
-                    className="bg-purple-500 text-sm px-4 py-1 rounded hover:bg-purple-600 transition-colors"
-                >
-                    Inicia sesión
-                </Link>
+                {user ? (
+                    <>
+                        <span className="text-sm">Hola, {user.displayName || user.email}</span>
+                        <button
+                            onClick={handleLogout}
+                            className="bg-red-600 text-sm px-4 py-1 rounded hover:bg-red-700 transition-colors"
+                        >
+                            Cerrar sesión
+                        </button>
+                    </>
+                ) : (
+                    <>
+                        <Link to="/register" className="text-sm hover:text-purple-500 transition-colors">
+                            Regístrate
+                        </Link>
+                        <Link
+                            to="/login"
+                            className="bg-purple-500 text-sm px-4 py-1 rounded hover:bg-purple-600 transition-colors"
+                        >
+                            Inicia sesión
+                        </Link>
+                    </>
+                )}
             </div>
         </nav>
     );

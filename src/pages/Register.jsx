@@ -1,7 +1,11 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { auth } from "../firebase/firebase"; 
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 
 export default function Register() {
+    const navigate = useNavigate();
+
     const [form, setForm] = useState({
         name: "",
         email: "",
@@ -18,7 +22,7 @@ export default function Register() {
         });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         const newErrors = {};
 
@@ -32,34 +36,44 @@ export default function Register() {
         setErrors(newErrors);
 
         if (Object.keys(newErrors).length === 0) {
-            alert("Registro válido. Aquí iría la lógica de envío.");
+            try {
+                const userCredential = await createUserWithEmailAndPassword(
+                    auth,
+                    form.email,
+                    form.password
+                );
+
+                await updateProfile(userCredential.user, {
+                    displayName: form.name,
+                });
+
+                alert("Registro exitoso ✅");
+                navigate("/"); 
+            } catch (error) {
+                if (error.code === "auth/email-already-in-use") {
+                    setErrors({ email: "El correo ya está registrado." });
+                } else {
+                    alert("Error al registrar usuario.");
+                    console.error(error);
+                }
+            }
         }
     };
 
     return (
         <div className="relative min-h-screen flex items-center justify-center text-white px-4 sm:px-6 lg:px-8">
-            {/* Fondo */}
             <div
                 className="absolute inset-0 bg-cover bg-center"
                 style={{ backgroundImage: "url('/images/bg-register.png')" }}
             ></div>
 
-            {/* Capa oscura */}
             <div className="absolute inset-0 bg-black opacity-60"></div>
 
-            {/* Botón volver */}
-            <Link
-                to="/"
-                className="absolute top-4 left-4 text-sm text-white bg-black/50 hover:bg-purple-500 px-3 py-1 rounded transition-colors z-20"
-            >
-                🏠 Volver al inicio
-            </Link>
-
-            {/* Formulario */}
             <div className="relative z-10 bg-gray-800 bg-opacity-90 p-6 sm:p-8 rounded shadow-md w-full max-w-md transition duration-700 ease-out">
                 <h2 className="text-2xl font-bold text-purple-500 mb-6 text-center">Crea tu cuenta</h2>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Nombre */}
                     <div>
                         <label htmlFor="name" className="block text-sm mb-1">
                             Nombre completo
@@ -75,6 +89,7 @@ export default function Register() {
                         {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
                     </div>
 
+                    {/* Email */}
                     <div>
                         <label htmlFor="email" className="block text-sm mb-1">
                             Correo electrónico
@@ -91,6 +106,7 @@ export default function Register() {
                         {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
                     </div>
 
+                    {/* Password */}
                     <div>
                         <label htmlFor="password" className="block text-sm mb-1">
                             Contraseña
@@ -107,6 +123,7 @@ export default function Register() {
                         {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password}</p>}
                     </div>
 
+                    {/* Confirmar contraseña */}
                     <div>
                         <label htmlFor="confirmPassword" className="block text-sm mb-1">
                             Confirmar contraseña

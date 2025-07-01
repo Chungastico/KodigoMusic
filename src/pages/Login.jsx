@@ -1,12 +1,17 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { auth } from "../firebase/firebase"; 
+import { signInWithEmailAndPassword } from "firebase/auth";
 
 export default function Login() {
+    const navigate = useNavigate();
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [errors, setErrors] = useState({});
+    const [authError, setAuthError] = useState("");
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         const newErrors = {};
@@ -14,9 +19,22 @@ export default function Login() {
         if (!password.trim()) newErrors.password = "La contraseña es obligatoria";
 
         setErrors(newErrors);
+        setAuthError("");
 
         if (Object.keys(newErrors).length === 0) {
-            alert("Formulario válido. Aquí iría la lógica de inicio de sesión.");
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                alert("Inicio de sesión exitoso ✅");
+                navigate("/");
+            } catch (error) {
+                if (error.code === "auth/user-not-found") {
+                    setAuthError("El usuario no existe.");
+                } else if (error.code === "auth/wrong-password") {
+                    setAuthError("Contraseña incorrecta.");
+                } else {
+                    setAuthError("Error al iniciar sesión.");
+                }
+            }
         }
     };
 
@@ -31,13 +49,6 @@ export default function Login() {
             {/* Capa oscura */}
             <div className="absolute inset-0 bg-black opacity-60"></div>
 
-            {/* Botón volver */}
-            <Link
-                to="/"
-                className="absolute top-4 left-4 text-sm text-white bg-black/50 hover:bg-purple-500 px-3 py-1 rounded transition-colors z-20"
-            >
-                🏠 Volver al inicio
-            </Link>
 
             {/* Contenido */}
             <div className="relative z-10 bg-gray-800 bg-opacity-90 p-6 sm:p-8 rounded shadow-md w-full max-w-md">
@@ -73,6 +84,10 @@ export default function Login() {
                         />
                         {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password}</p>}
                     </div>
+
+                    {authError && (
+                        <p className="text-red-400 text-sm mt-2 text-center">{authError}</p>
+                    )}
 
                     <button
                         type="submit"
